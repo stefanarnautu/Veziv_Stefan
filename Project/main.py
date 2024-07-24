@@ -46,7 +46,7 @@ def preprocess_data(requirements, offers):
 read_docx("../Oferte test")
 data = preprocess_data(requirements, offers)
 dataset = Dataset.from_list(data)
-"""""
+
 # Tokenize function
 def tokenize_function(examples):
     return tokenizer(examples['text'], padding='max_length', truncation=True, max_length=512)
@@ -98,12 +98,12 @@ trainer.train()
 # Save the trained model and tokenizer
 model.save_pretrained("fine-tuned-gpt2")
 tokenizer.save_pretrained("fine-tuned-gpt2")
-"""
+
 model = GPT2LMHeadModel.from_pretrained("fine-tuned-gpt2")
 tokenizer = GPT2Tokenizer.from_pretrained("fine-tuned-gpt2")
 
 
-def generate_text(prompt, max_length=150, num_return_sequences=1):
+def generate_text(prompt, max_length=500, max_new_tokens=500):
     # Tokenize the input prompt
     inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
 
@@ -111,17 +111,20 @@ def generate_text(prompt, max_length=150, num_return_sequences=1):
     outputs = model.generate(
         input_ids=inputs["input_ids"],
         attention_mask=inputs["attention_mask"],
-        max_length=max_length,  # Set to a higher value to ensure enough length
-        num_return_sequences=num_return_sequences,
+        max_length=inputs["input_ids"].shape[1] + max_new_tokens,  # Total length should be input length + new tokens
+        num_return_sequences=1,
         pad_token_id=tokenizer.eos_token_id,
-        temperature=0.9,  # Adjust for more creativity
-        top_k=50,  # Adjust for diversity
-        top_p=0.9  # Adjust for nucleus sampling
+        temperature=0.7,  # Adjust the creativity level
+        top_k=50,  # Adjust the number of highest probability tokens
+        top_p=0.9  # Adjust the cumulative probability for nucleus sampling
     )
+
+    # Decode the generated text
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 
 # Example prompt
-prompt = "O aplicatie de tip livrare de mancare"
+prompt = "Aplicatia de tip Glovo. Sistemul de logistica a riderului. Inregistrarea restaurantelor in aplicatie."
 
 # Generate text
 generated_text = generate_text(prompt)
